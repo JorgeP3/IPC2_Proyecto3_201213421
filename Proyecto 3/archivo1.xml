@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<config>
+	<clientes>
+		<cliente>
+			<NIT> 123456 </NIT>
+			<nombre> Jose armando </nombre>
+		</cliente>
+		<cliente>
+			<NIT> 123 </NIT>
+			<nombre> Jose torres </nombre>
+		</cliente>
+		<cliente>
+			<NIT> 1234 </NIT>
+			<nombre> George Martin </nombre>
+		</cliente>
+	</clientes>
+
+	<bancos>
+		<banco>
+			<codigo> 1234 </codigo>
+			<nombre> banco de los trabajadores </nombre>
+		</banco>
+	</bancos>
+
+</config>
