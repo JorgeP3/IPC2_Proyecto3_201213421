@@ -20,6 +20,10 @@
 			<codigo> 1234 </codigo>
 			<nombre> banco de los trabajadores </nombre>
 		</banco>
+		<banco>
+			<codigo> 1235 </codigo>
+			<nombre> banrural </nombre>
+		</banco>
 	</bancos>
 
 </config>

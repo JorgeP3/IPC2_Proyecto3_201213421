@@ -37,57 +37,103 @@ def prueba():
 def limpiar():
 
     lista_clientes.clear()
+    lista_bancos.clear()
 
     return "se borraron las listas"
 
 
 @app.route('/GuardarConfiguraciones', methods=['POST'])
 def create_clientes():              #archivo xml que se convierte en un diccionario
-    clientes_dict = xmltodict.parse(request.data)
-    bancos_dict = xmltodict.parse(request.data)
+    clientes_y_bancos_dict = xmltodict.parse(request.data)
+
+    clientes_dict=clientes_y_bancos_dict['config']['clientes']['cliente']
+    bancos_dict = clientes_y_bancos_dict['config']['bancos']['banco']
 
     #este for extrae la informacion de los clientes
     clientes_nuevos=0
     clientes_actualizados=0
-    for cliente in clientes_dict['config']['clientes']['cliente']:
+
+    if isinstance(clientes_dict, list):
+        for cliente in clientes_dict:
+            patronNit=r'[0-9-]+'
+            patronNombre = r'[a-zA-Z0-9ZÁÉÍÓÚáéíóúÜüÑñ\s]+' #duda sobre la expresion regular
+        
+            nit = re.search(patronNit, cliente['NIT'])
+            nombre = re.search(patronNombre, cliente['nombre'])
+
+            if nit and nombre:
+                if validarNit(nit.group())==False:
+                    lista_clientes.append(Cliente(str(nit.group()), str(nombre.group())))
+                    clientes_nuevos+=1
+                else:
+                    for clienteG in lista_clientes:
+                        if nit.group()==clienteG.nit:
+                            clienteG.nombre=nombre.group()
+                            clientes_actualizados+=1
+                            break  
+    else:  
+        cliente = clientes_dict
         patronNit=r'[0-9]+'
         patronNombre = r'[a-zA-Z0-9ZÁÉÍÓÚáéíóúÜüÑñ\s]+' #duda sobre la expresion regular
-     
+    
         nit = re.search(patronNit, cliente['NIT'])
         nombre = re.search(patronNombre, cliente['nombre'])
-    
-        if validarNit(nit.group())==False:
-            lista_clientes.append(Cliente(str(nit.group()), str(nombre.group())))
-            clientes_nuevos+=1
-        else:
-            for clienteG in lista_clientes:
-                if nit.group()==clienteG.nit:
-                    clienteG.nombre=nombre.group()
-                    clientes_actualizados+=1
-                    break
-                
+
+        if nit and nombre:
+            if validarNit(nit.group())==False:
+                lista_clientes.append(Cliente(str(nit.group()), str(nombre.group())))
+                clientes_nuevos+=1
+            else:
+                for clienteG in lista_clientes:
+                    if nit.group()==clienteG.nit:
+                        clienteG.nombre=nombre.group()
+                        clientes_actualizados+=1
+                        break  
+
     #este for extrae la informacion de los bancos, cuando solo hay un banco o un cliente se va todo al carajo
     bancos_nuevos=0
     bancos_actualizados=0
-    for banco in bancos_dict['config']['bancos']['banco']:
-        patronCodigo=r'[0-9]+'
+
+    if isinstance(bancos_dict, list):  # Si hay una lista de bancos
+        for banco in bancos_dict:
+            patronCodigo=r'[0-9]+'
+            patronNombre = r'[a-zA-Z0-9ZÁÉÍÓÚáéíóúÜüÑñ\s]+' #duda sobre la expresion regular
+        
+            codigo = re.search(patronCodigo, banco['codigo'])
+            nombre = re.search(patronNombre, banco['nombre'])
+    
+            if codigo and nombre:
+                if validarCodigoBanco(codigo.group())==False:
+                    lista_bancos.append(Banco(str(codigo.group()), str(nombre.group())))
+                    bancos_nuevos+=1
+                else:
+                    for bancoG in lista_bancos:
+                        if codigo.group()==bancoG.codigo:
+                            bancoG.nombre=nombre.group()
+                            bancos_actualizados+=1
+                            break  
+    else:  #cuando el xml tra solo un banco
+        banco = bancos_dict
+        patronCodigo=r'[0-9-]+'
         patronNombre = r'[a-zA-Z0-9ZÁÉÍÓÚáéíóúÜüÑñ\s]+' #duda sobre la expresion regular
-     
+    
         codigo = re.search(patronCodigo, banco['codigo'])
         nombre = re.search(patronNombre, banco['nombre'])
     
-        if validarCodigoBanco(codigo.group())==False:
-            lista_bancos.append(Banco(str(codigo.group()), str(nombre.group())))
-            bancos_nuevos+=1
-        else:
-            for bancoG in lista_bancos:
-                if codigo.group()==bancoG.codigo:
-                    bancoG.nombre=nombre.group()
-                    bancos_actualizados+=1
-                    break
-    
+        if codigo and nombre:
+            if validarCodigoBanco(codigo.group())==False:
+                lista_bancos.append(Banco(str(codigo.group()), str(nombre.group())))
+                bancos_nuevos+=1
+            else:
+                for bancoG in lista_bancos:
+                    if codigo.group()==bancoG.codigo:
+                        bancoG.nombre=nombre.group()
+                        bancos_actualizados+=1
+                        break 
 
-    respuesta= {'clientes':{"creados":clientes_nuevos,"actualizados":clientes_actualizados}}
+    
+    respuesta= {'clientes':{"creados":clientes_nuevos,"actualizados":clientes_actualizados},
+                'bancos':{"creados":bancos_nuevos,"actualizados":bancos_actualizados}}
     xml=dicttoxml.dicttoxml(respuesta,custom_root='respuesta',attr_type=False)
     print("------------------------------------------------")
     for cliente in lista_clientes:
@@ -97,39 +143,13 @@ def create_clientes():              #archivo xml que se convierte en un dicciona
         print("Codigo:",banco.codigo,"| Nombre:",banco.nombre)
     return  xml
 
-'''
+@app.route('/GuardarTransacciones', methods=['POST'])
+def create_trans():              #archivo xml que se convierte en un diccionario
+    clientes_y_bancos_dict = xmltodict.parse(request.data)
 
-@app.route('/clientes/get', methods=['GET'])
-def get_clientes():
-    dict_array = []
-    for cliente in lista_clientes:
-        dict_array.append({
-            'nombre': cliente.nombre, 
-            'apellido': cliente.apellido, 
-            'edad': cliente.edad,
-        })
-    xml = dicttoxml.dicttoxml(dict_array, custom_root='clientes', attr_type=False)
-    return xml
-
-@app.route('/clientes/average_yrs', methods=['GET'])
-def get_avg_yrs():
-    return "get succesful"
-
-@app.route('/clientes/create', methods=['POST'])
-def create_clientes():
-    clientes_dict = xmltodict.parse(request.data)
-    for cliente in clientes_dict['clientes']['cliente']:
-        patron = r'[a-zA-Z0-9]+'
-        nombre = re.search(patron, cliente['nombre'])
-        apellido = re.search(patron, cliente['apellido'])
-        edad = re.search(r'[0-9]+', cliente['edad'])
-        print(nombre.group())
-        lista_clientes.append(Cliente(nombre.group(), apellido.group(), int(edad.group())))
     
-    
-    return "post succesful"
+    return  "prueba Transacciones"
 
-'''
 
 if __name__=="__main__":
   app.run(threaded=True,port=5000,debug=True)
