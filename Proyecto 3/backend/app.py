@@ -213,22 +213,22 @@ def create_trans():              #archivo xml que se convierte en un diccionario
             else:#si si encuentra el numero de factura
                 facturas_duplicadas+=1
     
-    #procesamiento de los pagos
-    factuas_nuevas=0
-    facturas_duplicadas=0
-    factuas_con_error=0
+    #procesamiento de los PAGOS 
+    pagos_nuevos=0
+    pagos_duplicados=0
+    pagos_con_error=0
 
-    if isinstance(facturas_dic,list):
-        for factura in facturas_dic:
-            patronFactura= r'[a-zA-Z0-9-]+'
-            patronNit=r'[0-9-]+'
+    if isinstance(pagos_dic,list):
+        for pago in pagos_dic:
+            patronCodigoBanco= r'[0-9]+'
             patronFecha=r'^(0[1-9]|[1-2][0-9]|3[0-1])/(0[1-9]|1[0-2])/\d{4}$'
+            patronNit=r'[0-9-]+'
             patronValor=r'^-?\d+(?:\.\d+)?$'
 
-            numeroFactura=re.search(patronFactura, factura['numeroFactura']).group()
-            nitCliente=re.search(patronNit, factura['NITcliente']).group()
-            fecha=re.search(patronFecha, factura['fecha']).group()
-            valor=re.search(patronValor, factura['valor']).group()
+            numeroFactura=re.search(patronCodigoBanco, pago['numeroFactura']).group()
+            nitCliente=re.search(patronNit, pago['NITcliente']).group()
+            fecha=re.search(patronFecha, pago['fecha']).group()
+            valor=re.search(patronValor, pago['valor']).group()
 
             if numeroFactura and nitCliente and fecha and valor:
                 if validarNumeroFactura(numeroFactura)==False:
