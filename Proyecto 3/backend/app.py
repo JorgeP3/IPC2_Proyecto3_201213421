@@ -1,7 +1,11 @@
-from flask import Flask, request
+#clases
 from clases.Cliente import Cliente
 from clases.Banco import Banco
+from clases.Factura import Factura
 
+
+#bibliotecas
+from flask import Flask, request
 import re, xmltodict, dicttoxml #convertir xml a un diccionario o
 
 def create_app():
@@ -11,6 +15,8 @@ app = create_app()
 
 lista_clientes = []
 lista_bancos=[]
+lista_facturas=[]
+lista_pagos=[]
 
 def validarNit(nit):#si lo encuentra retorna true, si no falso.
     encontrado=False
@@ -28,6 +34,14 @@ def validarCodigoBanco(codigo):#si lo encuentra retorna true, si no falso.
             break
     return encontrado
 
+def validarNumeroFactura(numeroFactura):#si lo encuentra retorna true, si no falso.
+    encontrado=False
+    for factura in lista_facturas:
+        if numeroFactura==factura.numeroFactura:
+            encontrado=True
+            break
+    return encontrado
+
 @app.route('/prueba', methods=['get'])
 def prueba():
 
@@ -38,6 +52,8 @@ def limpiar():
 
     lista_clientes.clear()
     lista_bancos.clear()
+    lista_facturas.clear()
+    lista_pagos.clear()
 
     return "se borraron las listas"
 
@@ -145,8 +161,60 @@ def create_clientes():              #archivo xml que se convierte en un dicciona
 
 @app.route('/GuardarTransacciones', methods=['POST'])
 def create_trans():              #archivo xml que se convierte en un diccionario
-    clientes_y_bancos_dict = xmltodict.parse(request.data)
+    facturas_y_pagos_dict = xmltodict.parse(request.data)
 
+    facturas_dic=facturas_y_pagos_dict['transacciones']['facturas']['factura']
+    pagos_dic=facturas_y_pagos_dict['transacciones']['pagos']['pago']
+
+    factuas_nuevas=0
+    facturas_duplicadas=0
+    factuas_con_error=0
+
+    if isinstance(facturas_dic,list):
+        for factura in facturas_dic:
+            patronFactura= r'[a-zA-Z0-9-]+'
+            patronNit=r'[0-9-]+'
+            patronFecha=r'^(0[1-9]|[1-2][0-9]|3[0-1])/(0[1-9]|1[0-2])/\d{4}$'
+            patronValor=r'^-?\d+(?:\.\d+)?$'
+
+            numeroFactura=re.search(patronFactura, factura['numeroFactura']).group()
+            nitCliente=re.search(patronNit, factura['NITcliente']).group()
+            fecha=re.search(patronFecha, factura['fecha']).group()
+            valor=re.search(patronValor, factura['valor']).group()
+
+            if numeroFactura and nitCliente and fecha and valor:
+                if validarNumeroFactura(numeroFactura)==False:
+                    if validarNit(nitCliente)==True:
+                        lista_facturas.append(Factura(numeroFactura,nitCliente,fecha,float(valor)))
+                        factuas_nuevas+=1
+                    else:
+                        factuas_con_error+=1
+                else:#si si encuentra el numero de factura
+                    facturas_duplicadas+=1
+    else:#si solo viene una factura
+        factura=facturas_dic
+        patronFactura= r'[a-zA-Z0-9-]+'
+        patronNit=r'[0-9-]+'
+        patronFecha=r'^(0[1-9]|[1-2][0-9]|3[0-1])/(0[1-9]|1[0-2])/\d{4}$'
+        patronValor=r'^-?\d+(?:\.\d+)?$'
+
+        numeroFactura=re.search(patronFactura, factura['numeroFactura']).group()
+        nitCliente=re.search(patronNit, factura['NITcliente']).group()
+        fecha=re.search(patronFecha, factura['fecha']).group()
+        valor=re.search(patronValor, factura['valor']).group()
+
+        if numeroFactura and nitCliente and fecha and valor:
+            if validarNumeroFactura(numeroFactura)==False:
+                if validarNit(nitCliente)==True:
+                    lista_facturas.append(Factura(numeroFactura,nitCliente,fecha,float(valor)))
+                    factuas_nuevas+=1
+                else:
+                    factuas_con_error+=1
+            else:#si si encuentra el numero de factura
+                facturas_duplicadas+=1
+    print("------------------------------------------------")
+    for factura in lista_facturas:
+        print("#factura:",factura.numeroFactura,"| NitCliente:",factura.nitCliente,"| Fecha:",factura.fecha,"| valor",factura.valor)
     
     return  "prueba Transacciones"
 
