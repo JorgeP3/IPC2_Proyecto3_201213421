@@ -212,11 +212,65 @@ def create_trans():              #archivo xml que se convierte en un diccionario
                     factuas_con_error+=1
             else:#si si encuentra el numero de factura
                 facturas_duplicadas+=1
+    
+    #procesamiento de los pagos
+    factuas_nuevas=0
+    facturas_duplicadas=0
+    factuas_con_error=0
+
+    if isinstance(facturas_dic,list):
+        for factura in facturas_dic:
+            patronFactura= r'[a-zA-Z0-9-]+'
+            patronNit=r'[0-9-]+'
+            patronFecha=r'^(0[1-9]|[1-2][0-9]|3[0-1])/(0[1-9]|1[0-2])/\d{4}$'
+            patronValor=r'^-?\d+(?:\.\d+)?$'
+
+            numeroFactura=re.search(patronFactura, factura['numeroFactura']).group()
+            nitCliente=re.search(patronNit, factura['NITcliente']).group()
+            fecha=re.search(patronFecha, factura['fecha']).group()
+            valor=re.search(patronValor, factura['valor']).group()
+
+            if numeroFactura and nitCliente and fecha and valor:
+                if validarNumeroFactura(numeroFactura)==False:
+                    if validarNit(nitCliente)==True:
+                        lista_facturas.append(Factura(numeroFactura,nitCliente,fecha,float(valor)))
+                        factuas_nuevas+=1
+                    else:
+                        factuas_con_error+=1
+                else:#si si encuentra el numero de factura
+                    facturas_duplicadas+=1
+
+    else:#si solo viene una factura
+        factura=facturas_dic
+        patronFactura= r'[a-zA-Z0-9-]+'
+        patronNit=r'[0-9-]+'
+        patronFecha=r'^(0[1-9]|[1-2][0-9]|3[0-1])/(0[1-9]|1[0-2])/\d{4}$'
+        patronValor=r'^-?\d+(?:\.\d+)?$'
+
+        numeroFactura=re.search(patronFactura, factura['numeroFactura']).group()
+        nitCliente=re.search(patronNit, factura['NITcliente']).group()
+        fecha=re.search(patronFecha, factura['fecha']).group()
+        valor=re.search(patronValor, factura['valor']).group()
+
+        if numeroFactura and nitCliente and fecha and valor:
+            if validarNumeroFactura(numeroFactura)==False:
+                if validarNit(nitCliente)==True:
+                    lista_facturas.append(Factura(numeroFactura,nitCliente,fecha,float(valor)))
+                    factuas_nuevas+=1
+                else:
+                    factuas_con_error+=1
+            else:#si si encuentra el numero de factura
+                facturas_duplicadas+=1
+
+
+
+    respuesta= {'facturas':{"nuevasFacturas":factuas_nuevas,"facturasDuplicadas":facturas_duplicadas,"facturasConError":factuas_con_error}}
+    xml=dicttoxml.dicttoxml(respuesta,custom_root='transacciones',attr_type=False)
     print("------------------------------------------------")
     for factura in lista_facturas:
         print("#factura:",factura.numeroFactura,"| NitCliente:",factura.nitCliente,"| Fecha:",factura.fecha,"| valor",factura.valor)
     
-    return  "prueba Transacciones"
+    return  xml
 
 
 if __name__=="__main__":
